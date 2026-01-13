@@ -10,7 +10,6 @@
             --bambu-green: #00b06f;
             --bambu-dark: #2d2d2d;
             --roblox-blue: #00a2ff;
-            --roblox-red: #f64141;
             --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
 
@@ -68,21 +67,19 @@
             border: 2px solid #eee; 
             border-radius: 10px; 
             box-sizing: border-box;
-            transition: 0.3s;
             font-size: 1rem;
         }
 
         input:focus {
             border-color: var(--bambu-green);
             outline: none;
-            background: #f9fffb;
         }
 
         .results {
             background: #f8f9fa;
             padding: 15px;
             border-radius: 12px;
-            border-left: 4px solid #ddd;
+            border-left: 4px solid var(--bambu-green);
         }
 
         .result-row { 
@@ -99,7 +96,6 @@
             border-radius: 15px;
             text-align: center;
             margin-top: 20px;
-            box-shadow: 0 4px 10px rgba(0, 176, 111, 0.2);
         }
 
         .price-label { font-size: 0.9rem; opacity: 0.9; }
@@ -131,28 +127,25 @@
             cursor: pointer;
             margin-top: 25px;
             font-weight: bold;
-            font-size: 1rem;
-            transition: 0.3s;
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 10px;
         }
 
-        .pdf-btn:hover { background: #000; transform: translateY(-2px); }
-
-        /* HIDE FROM PDF LOGIC */
-        .is-exporting .hide-from-pdf { display: none !important; }
-        .is-exporting .container { box-shadow: none; border: 1px solid #eee; }
+        /* HIDE ONLY PROFIT SETTINGS FROM PDF */
+        .admin-only { display: block; }
+        .is-exporting .admin-only { display: none !important; }
+        .is-exporting .container { box-shadow: none; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
 <div class="container" id="invoice-card">
-    <h2>🧩 Print Calculator</h2>
+    <h2>🛠️ 3D Print Quote</h2>
 
-    <div class="hide-from-pdf">
-        <div class="section-title">⚙️ Admin Settings</div>
+    <div class="admin-only">
+        <div class="section-title">🔒 Admin Settings</div>
         <div class="input-group">
             <label>Profit Margin (%)</label>
             <input type="number" id="profitMargin" value="50" oninput="calculate()">
@@ -163,49 +156,47 @@
         </div>
     </div>
 
-    <div class="section-title">📏 Model Details</div>
+    <div class="section-title">📝 Project Details</div>
     
     <div class="input-group">
         <label>Weight (grams)</label>
-        <input type="number" id="weight" value="50" placeholder="e.g. 150" oninput="calculate()">
+        <input type="number" id="weight" value="50" oninput="calculate()">
     </div>
 
     <div class="input-group">
         <label>Print Time (hours)</label>
-        <input type="number" id="time" value="2.5" step="0.1" placeholder="e.g. 4.5" oninput="calculate()">
+        <input type="number" id="time" value="2.5" step="0.1" oninput="calculate()">
     </div>
 
     <div class="input-group">
-        <label>🎨 AMS Colors</label>
+        <label>🎨 AMS Multi-Color</label>
         <select id="colors" onchange="calculate()">
             <option value="0">1 Color (Standard)</option>
-            <option value="1">2 Colors (+ Waste)</option>
-            <option value="2">3 Colors (+ Waste)</option>
-            <option value="3">4 Colors (+ Waste)</option>
+            <option value="1">2 Colors (+ Purge)</option>
+            <option value="2">3 Colors (+ Purge)</option>
+            <option value="3">4 Colors (+ Purge)</option>
         </select>
     </div>
 
-    <div class="hide-from-pdf">
-        <div class="section-title">📉 Production Costs</div>
-        <div class="results">
-            <div class="result-row"><span>🧵 Material:</span><span id="cost-material">0 Lei</span></div>
-            <div class="result-row"><span>⚡ Energy & Wear:</span><span id="cost-power">0 Lei</span></div>
-            <div class="result-row"><span>🌈 AMS Purge:</span><span id="cost-color">0 Lei</span></div>
-        </div>
+    <div class="section-title">📊 Price Breakdown</div>
+    <div class="results">
+        <div class="result-row"><span>🧵 Material:</span><span id="cost-material">0 Lei</span></div>
+        <div class="result-row"><span>⚡ Energy & Wear:</span><span id="cost-power">0 Lei</span></div>
+        <div class="result-row"><span>♻️ AMS Flush/Waste:</span><span id="cost-color">0 Lei</span></div>
     </div>
 
-    <div class="section-title">💰 Final Quote</div>
+    <div class="section-title">💰 Final Estimate</div>
     <div class="final-price-box">
-        <span class="price-label">Total Amount</span>
+        <span class="price-label">Total in Lei</span>
         <span class="price-value" id="final-lei">0 Lei</span>
     </div>
 
     <div class="robux-box">
-        <img src="https://files.rbxcdn.com/123/robux_icon.png" width="20" style="display:none"> <span>💎</span> <span id="final-robux">0 Robux</span>
+        <span>💎</span> <span id="final-robux">0 Robux</span>
     </div>
 
     <button class="pdf-btn" onclick="exportPDF()">
-        <span>📄</span> Download Professional PDF
+        <span>📄</span> Download Quote PDF
     </button>
 </div>
 
@@ -217,7 +208,6 @@
         const filamentPrice = parseFloat(document.getElementById('filamentCost').value) || 100;
         const margin = parseFloat(document.getElementById('profitMargin').value) || 0;
 
-        // Formula: weight(kg) * price + hours * (Wattage*Price + Maintenance) + colorFee
         const materialCost = (weight / 1000) * filamentPrice;
         const overhead = hours * (0.12 * 1.30 + 1.50); 
         const colorCost = extraColors * 5.00;
@@ -225,7 +215,6 @@
         const productionCost = materialCost + overhead + colorCost;
         const finalPriceLei = productionCost * (1 + (margin / 100));
         
-        // 1 Robux approx 0.06 Lei
         const finalPriceRobux = finalPriceLei / 0.06;
 
         document.getElementById('cost-material').innerText = materialCost.toFixed(2) + " Lei";
@@ -244,9 +233,9 @@
 
         const opt = {
             margin: 0.3,
-            filename: '3D_Print_Quotation.pdf',
+            filename: '3D_Print_Quote.pdf',
             image: { type: 'jpeg', quality: 1 },
-            html2canvas: { scale: 3, useCORS: true },
+            html2canvas: { scale: 3 },
             jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
         };
 
@@ -256,7 +245,6 @@
         });
     }
 
-    // Initialize
     calculate();
 </script>
 </body>
