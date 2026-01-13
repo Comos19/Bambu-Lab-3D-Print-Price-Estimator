@@ -33,12 +33,7 @@
             width: 100%;
         }
 
-        h2 { 
-            text-align: center; 
-            color: var(--bambu-dark);
-            margin-bottom: 25px;
-            font-size: 1.8rem;
-        }
+        h2 { text-align: center; color: var(--bambu-dark); margin-bottom: 25px; }
 
         .section-title {
             font-size: 0.85rem;
@@ -52,15 +47,8 @@
         }
 
         .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; color: #444; }
         
-        label { 
-            display: block; 
-            margin-bottom: 6px; 
-            font-weight: 600; 
-            font-size: 0.95rem;
-            color: #444;
-        }
-
         input, select {
             width: 100%; 
             padding: 12px; 
@@ -70,11 +58,6 @@
             font-size: 1rem;
         }
 
-        input:focus {
-            border-color: var(--bambu-green);
-            outline: none;
-        }
-
         .results {
             background: #f8f9fa;
             padding: 15px;
@@ -82,12 +65,7 @@
             border-left: 4px solid var(--bambu-green);
         }
 
-        .result-row { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-bottom: 8px; 
-            font-size: 0.95rem;
-        }
+        .result-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
 
         .final-price-box {
             background: var(--bambu-green);
@@ -95,7 +73,8 @@
             padding: 20px;
             border-radius: 15px;
             text-align: center;
-            margin-top: 20px;
+            margin-top: 10px;
+            min-height: 80px; /* Prevent collapse */
         }
 
         .price-label { font-size: 0.9rem; opacity: 0.9; }
@@ -111,10 +90,6 @@
             margin-top: 12px;
             font-weight: 800;
             font-size: 1.2rem;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
         }
 
         .pdf-btn {
@@ -133,10 +108,10 @@
             gap: 10px;
         }
 
-        /* HIDE ONLY PROFIT SETTINGS FROM PDF */
-        .admin-only { display: block; }
-        .is-exporting .admin-only { display: none !important; }
-        .is-exporting .container { box-shadow: none; border: 1px solid #ddd; }
+        /* Use a dedicated class for PDF hiding that doesn't mess with layout */
+        .admin-controls { display: block; }
+        .is-exporting .admin-controls { display: none !important; }
+        .is-exporting .pdf-btn { display: none !important; }
     </style>
 </head>
 <body>
@@ -144,7 +119,7 @@
 <div class="container" id="invoice-card">
     <h2>🛠️ 3D Print Quote</h2>
 
-    <div class="admin-only">
+    <div class="admin-controls">
         <div class="section-title">🔒 Admin Settings</div>
         <div class="input-group">
             <label>Profit Margin (%)</label>
@@ -157,17 +132,14 @@
     </div>
 
     <div class="section-title">📝 Project Details</div>
-    
     <div class="input-group">
         <label>Weight (grams)</label>
-        <input type="number" id="weight" value="50" oninput="calculate()">
+        <input type="number" id="weight" value="133" oninput="calculate()">
     </div>
-
     <div class="input-group">
         <label>Print Time (hours)</label>
-        <input type="number" id="time" value="2.5" step="0.1" oninput="calculate()">
+        <input type="number" id="time" value="6" oninput="calculate()">
     </div>
-
     <div class="input-group">
         <label>🎨 AMS Multi-Color</label>
         <select id="colors" onchange="calculate()">
@@ -180,14 +152,14 @@
 
     <div class="section-title">📊 Price Breakdown</div>
     <div class="results">
-        <div class="result-row"><span>🧵 Material:</span><span id="cost-material">0 Lei</span></div>
-        <div class="result-row"><span>⚡ Energy & Wear:</span><span id="cost-power">0 Lei</span></div>
-        <div class="result-row"><span>♻️ AMS Flush/Waste:</span><span id="cost-color">0 Lei</span></div>
+        <div class="result-row"><span>🧵 Material:</span><span id="cost-material">0.00 Lei</span></div>
+        <div class="result-row"><span>⚡ Energy & Wear:</span><span id="cost-power">0.00 Lei</span></div>
+        <div class="result-row"><span>♻️ AMS Flush/Waste:</span><span id="cost-color">0.00 Lei</span></div>
     </div>
 
     <div class="section-title">💰 Final Estimate</div>
     <div class="final-price-box">
-        <span class="price-label">Total in Lei</span>
+        <span class="price-label">Total Amount</span>
         <span class="price-value" id="final-lei">0 Lei</span>
     </div>
 
@@ -195,9 +167,7 @@
         <span>💎</span> <span id="final-robux">0 Robux</span>
     </div>
 
-    <button class="pdf-btn" onclick="exportPDF()">
-        <span>📄</span> Download Quote PDF
-    </button>
+    <button class="pdf-btn" onclick="exportPDF()">📄 Download PDF</button>
 </div>
 
 <script>
@@ -212,39 +182,38 @@
         const overhead = hours * (0.12 * 1.30 + 1.50); 
         const colorCost = extraColors * 5.00;
 
-        const productionCost = materialCost + overhead + colorCost;
-        const finalPriceLei = productionCost * (1 + (margin / 100));
-        
-        const finalPriceRobux = finalPriceLei / 0.06;
+        const totalCost = materialCost + overhead + colorCost;
+        const finalPrice = totalCost * (1 + (margin / 100));
+        const finalRobux = finalPrice / 0.06;
 
         document.getElementById('cost-material').innerText = materialCost.toFixed(2) + " Lei";
         document.getElementById('cost-power').innerText = overhead.toFixed(2) + " Lei";
         document.getElementById('cost-color').innerText = colorCost.toFixed(2) + " Lei";
-        document.getElementById('final-lei').innerText = finalPriceLei.toFixed(2) + " Lei";
-        document.getElementById('final-robux').innerText = Math.ceil(finalPriceRobux).toLocaleString();
+        document.getElementById('final-lei').innerText = Math.round(finalPrice) + " Lei";
+        document.getElementById('final-robux').innerText = Math.ceil(finalRobux).toLocaleString() + " Robux";
     }
 
     function exportPDF() {
+        // Force calculation before export
+        calculate();
+
         const element = document.getElementById('invoice-card');
-        const btn = document.querySelector('.pdf-btn');
-        
         element.classList.add('is-exporting');
-        btn.style.display = 'none';
 
         const opt = {
             margin: 0.3,
             filename: '3D_Print_Quote.pdf',
             image: { type: 'jpeg', quality: 1 },
-            html2canvas: { scale: 3 },
+            html2canvas: { scale: 2, logging: false, useCORS: true },
             jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
         };
 
         html2pdf().set(opt).from(element).save().then(() => {
             element.classList.remove('is-exporting');
-            btn.style.display = 'flex';
         });
     }
 
+    // Run once on start
     calculate();
 </script>
 </body>
