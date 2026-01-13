@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Print Price Estimator (Lei & Robux)</title>
+    <title>3D Print Price Estimator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
-            --primary: #00b06f; /* Bambu Lab Green-ish */
+            --primary: #00b06f;
             --dark: #1a1a1a;
             --light: #f4f4f4;
             --card-bg: #ffffff;
@@ -14,9 +15,8 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: sans-serif;
             background-color: var(--light);
-            color: var(--dark);
             padding: 20px;
             display: flex;
             justify-content: center;
@@ -27,76 +27,36 @@
             padding: 2rem;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            max-width: 500px;
+            max-width: 450px;
             width: 100%;
         }
 
-        h2 { text-align: center; margin-bottom: 1.5rem; color: var(--dark); }
+        h2 { text-align: center; margin-top: 0; }
         
         .section-title {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #666;
+            color: #888;
             margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
-            border-bottom: 2px solid #eee;
+            border-bottom: 1px solid #eee;
             padding-bottom: 5px;
         }
 
-        .input-group {
-            margin-bottom: 1rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.4rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
+        .input-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 0.9rem; }
         input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 1rem;
-            box-sizing: border-box;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(0, 176, 111, 0.1);
-        }
-
-        .color-inputs {
-            display: flex;
-            gap: 10px;
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;
         }
 
         .results {
             background: #f9f9f9;
-            padding: 1.5rem;
+            padding: 1.2rem;
             border-radius: 8px;
-            margin-top: 2rem;
+            margin-top: 1rem;
         }
 
-        .result-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-            font-size: 0.95rem;
-        }
-
-        .result-row.total {
-            border-top: 2px solid #ddd;
-            padding-top: 10px;
-            margin-top: 10px;
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
+        .result-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; }
+        
         .final-price {
             background: var(--primary);
             color: white;
@@ -106,11 +66,7 @@
             margin-top: 15px;
         }
 
-        .final-price-main {
-            font-size: 2rem;
-            font-weight: bold;
-            display: block;
-        }
+        .final-price-main { font-size: 2rem; font-weight: bold; display: block; }
 
         .robux-price {
             background: var(--roblox-red);
@@ -120,151 +76,133 @@
             text-align: center;
             margin-top: 10px;
             font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
         }
 
-        .small-text {
-            font-size: 0.75rem;
-            color: #888;
-            margin-top: 4px;
+        .pdf-btn {
+            background-color: var(--dark);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: bold;
         }
+
+        /* HIDE FROM PDF LOGIC */
+        .hide-from-pdf { display: block; }
+        .is-exporting .hide-from-pdf { display: none !important; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>🖨️ 3D Print Cost Estimator</h2>
+<div class="container" id="invoice-card">
+    <h2>3D Print Quotation</h2>
 
-    <div class="section-title">Model Details</div>
+    <div class="hide-from-pdf">
+        <div class="section-title">Admin Settings (Hidden on PDF)</div>
+        <div class="input-group">
+            <label>Profit Margin (%)</label>
+            <input type="number" id="profitMargin" value="50" oninput="calculate()">
+        </div>
+        <div class="input-group">
+            <label>Filament Cost (Lei/kg)</label>
+            <input type="number" id="filamentCost" value="100" oninput="calculate()">
+        </div>
+    </div>
+
+    <div class="section-title">Model Specifications</div>
     
     <div class="input-group">
-        <label for="weight">Weight (grams)</label>
+        <label>Weight (grams)</label>
         <input type="number" id="weight" value="50" oninput="calculate()">
     </div>
 
     <div class="input-group">
-        <label for="time">Print Time (hours)</label>
+        <label>Print Time (hours)</label>
         <input type="number" id="time" value="2.5" step="0.1" oninput="calculate()">
     </div>
 
     <div class="input-group">
-        <label for="colors">Number of Colors (1-4)</label>
+        <label>Colors</label>
         <select id="colors" onchange="calculate()">
-            <option value="0">1 Color (Standard)</option>
-            <option value="1">2 Colors (+ Waste)</option>
-            <option value="2">3 Colors (+ Waste)</option>
-            <option value="3">4 Colors (+ Waste)</option>
+            <option value="0">1 Color</option>
+            <option value="1">2 Colors</option>
+            <option value="2">3 Colors</option>
+            <option value="3">4 Colors</option>
         </select>
-        <div class="small-text">Bambu Lab AMS wastes filament when switching colors.</div>
     </div>
 
-    <div class="section-title">Costs & Profit</div>
-
-    <div class="input-group">
-        <label>Filament Cost (Lei / kg)</label>
-        <input type="number" id="filamentCost" value="100" oninput="calculate()">
-    </div>
-
-    <div class="input-group">
-        <label>Profit Margin (%)</label>
-        <input type="number" id="profitMargin" value="50" oninput="calculate()">
-    </div>
-
-    <div class="results">
-        <div class="result-row">
-            <span>Material Cost:</span>
-            <span id="cost-material">0.00 Lei</span>
-        </div>
-        <div class="result-row">
-            <span>Electricity (1.3 Lei/kWh):</span>
-            <span id="cost-power">0.00 Lei</span>
-        </div>
-        <div class="result-row">
-            <span>Maintenance (Wear & Tear):</span>
-            <span id="cost-maint">0.00 Lei</span>
-        </div>
-        <div class="result-row">
-            <span>Multi-color Fee:</span>
-            <span id="cost-color">0.00 Lei</span>
-        </div>
-        <div class="result-row total">
-            <span>Production Cost:</span>
-            <span id="cost-total">0.00 Lei</span>
+    <div class="hide-from-pdf">
+        <div class="section-title">Production Breakdown</div>
+        <div class="results">
+            <div class="result-row"><span>Material Cost:</span><span id="cost-material">0 Lei</span></div>
+            <div class="result-row"><span>Energy & Wear:</span><span id="cost-power">0 Lei</span></div>
+            <div class="result-row"><span>Color Surcharge:</span><span id="cost-color">0 Lei</span></div>
         </div>
     </div>
 
+    <div class="section-title">Total Price</div>
     <div class="final-price">
-        <span>Final Price (Cash)</span>
+        <span>Amount Due (Lei)</span>
         <span class="final-price-main" id="final-lei">0 Lei</span>
     </div>
 
     <div class="robux-price">
-        <span>🔹</span> <span id="final-robux">0 Robux</span>
+        🔹 <span id="final-robux">0 Robux</span>
     </div>
-    <div style="text-align: center;" class="small-text">Based on ~0.06 Lei/Robux purchase rate</div>
 
+    <button class="pdf-btn" onclick="exportPDF()">📄 Save Quote as PDF</button>
 </div>
 
 <script>
     function calculate() {
-        // --- INPUTS ---
         const weight = parseFloat(document.getElementById('weight').value) || 0;
         const hours = parseFloat(document.getElementById('time').value) || 0;
         const extraColors = parseInt(document.getElementById('colors').value) || 0;
-        const filamentPricePerKg = parseFloat(document.getElementById('filamentCost').value) || 100;
-        const profitMargin = parseFloat(document.getElementById('profitMargin').value) || 0;
+        const filamentPrice = parseFloat(document.getElementById('filamentCost').value) || 100;
+        const margin = parseFloat(document.getElementById('profitMargin').value) || 0;
 
-        // --- CONSTANTS (Market Rates in Romania) ---
-        const powerCostPerKwh = 1.30; // Approx 1.30 RON per kWh (residential avg)
-        const printerWattage = 0.12; // Bambu Lab avg consumption ~120W/h
-        const maintenancePerHour = 1.50; // Wear on nozzle, belts, lube per hour
-        const colorChangeFee = 5.00; // Flat fee per EXTRA color (covers purge waste + risk)
+        const materialCost = (weight / 1000) * filamentPrice;
+        const overhead = hours * (0.12 * 1.30 + 1.50); // Power + Maintenance
+        const colorCost = extraColors * 5.00;
 
-        // --- CALCULATIONS ---
-        
-        // 1. Material Cost
-        const materialCost = (weight / 1000) * filamentPricePerKg;
+        const productionCost = materialCost + overhead + colorCost;
+        const finalPriceLei = productionCost * (1 + (margin / 100));
+        const finalPriceRobux = finalPriceLei / 0.06;
 
-        // 2. Electricity
-        const electricityCost = hours * printerWattage * powerCostPerKwh;
-
-        // 3. Maintenance
-        const maintenanceCost = hours * maintenancePerHour;
-
-        // 4. Color Fee
-        const colorCost = extraColors * colorChangeFee;
-
-        // Total Production Cost
-        const productionCost = materialCost + electricityCost + maintenanceCost + colorCost;
-
-        // Final Price with Profit
-        // Formula: Cost / (1 - margin/100) -> This is "Gross Margin". 
-        // Or simple markup: Cost * (1 + margin/100).
-        // Let's use simple Markup as it's easier for hobbyists to understand.
-        const finalPriceLei = productionCost * (1 + (profitMargin / 100));
-
-        // Robux Calculation
-        // 400 Robux is ~$5 USD (~23-24 Lei). So 1 Robux approx 0.06 Lei.
-        const leiPerRobux = 0.06;
-        const finalPriceRobux = finalPriceLei / leiPerRobux;
-
-        // --- UPDATE UI ---
         document.getElementById('cost-material').innerText = materialCost.toFixed(2) + " Lei";
-        document.getElementById('cost-power').innerText = electricityCost.toFixed(2) + " Lei";
-        document.getElementById('cost-maint').innerText = maintenanceCost.toFixed(2) + " Lei";
+        document.getElementById('cost-power').innerText = overhead.toFixed(2) + " Lei";
         document.getElementById('cost-color').innerText = colorCost.toFixed(2) + " Lei";
-        document.getElementById('cost-total').innerText = productionCost.toFixed(2) + " Lei";
-        
         document.getElementById('final-lei').innerText = finalPriceLei.toFixed(2) + " Lei";
-        document.getElementById('final-robux').innerText = Math.ceil(finalPriceRobux) + " Robux";
+        document.getElementById('final-robux').innerText = Math.ceil(finalPriceRobux).toLocaleString();
     }
 
-    // Run on load
+    function exportPDF() {
+        const element = document.getElementById('invoice-card');
+        const btn = document.querySelector('.pdf-btn');
+        
+        // 1. Hide unwanted elements
+        element.classList.add('is-exporting');
+        btn.style.display = 'none';
+
+        const opt = {
+            margin: 0.5,
+            filename: '3D_Print_Quote.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            // 2. Bring them back after saving
+            element.classList.remove('is-exporting');
+            btn.style.display = 'block';
+        });
+    }
+
     calculate();
 </script>
-
 </body>
 </html>
