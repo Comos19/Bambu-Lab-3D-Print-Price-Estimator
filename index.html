@@ -193,24 +193,27 @@
         document.getElementById('final-robux').innerText = Math.ceil(finalRobux).toLocaleString() + " Robux";
     }
 
-    function exportPDF() {
+function exportPDF() {
         // Force calculation before export
         calculate();
 
         const element = document.getElementById('invoice-card');
         element.classList.add('is-exporting');
 
-        const opt = {
-            margin: 0.3,
-            filename: '3D_Print_Quote.pdf',
-            image: { type: 'jpeg', quality: 1 },
-            html2canvas: { scale: 2, logging: false, useCORS: true },
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-        };
+        // Wait for DOM to update before generating PDF
+        setTimeout(() => {
+            const opt = {
+                margin: 0.3,
+                filename: '3D_Print_Quote.pdf',
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2, logging: false, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
 
-        html2pdf().set(opt).from(element).save().then(() => {
-            element.classList.remove('is-exporting');
-        });
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.classList.remove('is-exporting');
+            });
+        }, 100);
     }
 
     // Run once on start
@@ -218,3 +221,4 @@
 </script>
 </body>
 </html>
+
